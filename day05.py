@@ -11,7 +11,8 @@ itemsIds = set()
 (rangesRaw, itemsIdsRaw) = data.split("\n\n")
 
 for range in rangesRaw.split("\n"):
-    ranges.append(tuple(int(x) for x in range.split("-")))
+    parts = [int(x) for x in range.split("-")]
+    ranges.append((parts[0], parts[1]))
 
 for itemId in itemsIdsRaw.split("\n"):
     itemsIds.add(int(itemId))
