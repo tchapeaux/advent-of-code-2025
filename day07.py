@@ -30,7 +30,6 @@ alreadyHandled = set([startPos])
 
 while len(emitters) > 0:
     pos = emitters.popleft()
-    assert pos
 
     x = pos[0]
     # Find the closest splitter directly below it
