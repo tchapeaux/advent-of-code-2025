@@ -7,5 +7,9 @@ Only 12 days this year 🥲
 ```
 000000000111
 123456789012
-*********...
+**********..
 ```
+
+Note that some days might need to be run with `uv` to get the dependencies:
+
+`uv run dayXX.py`
