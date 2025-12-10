@@ -49,7 +49,7 @@ def yieldPointInSegment(t1, t2):
 # where no segments intersects
 
 # NOTE - this actually could find an "outer rectangle", which fits nicely into the
-# tiles shape, but hopefully this does not happen in my input ...
+# tiles shape, but thankfully this does not happen in my input ...
 
 for areaIdx, (area, t1, t2) in enumerate(sortedAreas):
     if areaIdx % 100 == 0:
