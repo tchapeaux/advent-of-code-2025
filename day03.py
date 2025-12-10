@@ -1,5 +1,5 @@
 import math
-from functools import lru_cache
+from functools import cache
 
 with open("inputs/day03.txt", "r") as file:
     data = file.read()
@@ -33,7 +33,7 @@ for line in cells:
 print("Part 1", part1Acc)
 
 
-@lru_cache
+@cache
 def findBestCombination(cells, combSize):
     assert combSize > 0
 

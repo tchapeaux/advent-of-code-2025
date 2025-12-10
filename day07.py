@@ -1,5 +1,5 @@
 from collections import deque
-from functools import lru_cache
+from functools import cache
 
 with open("inputs/day07.txt") as f:
     data = f.read().strip()
@@ -56,7 +56,7 @@ print("Part 1", splitCount)
 # Part 2 : count multi-worlds
 
 
-@lru_cache
+@cache
 def countTimelines(startPoint, splittersBelow):
     if len(splittersBelow) == 0:
         return 1
