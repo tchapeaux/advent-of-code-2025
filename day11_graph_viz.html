@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+    <!-- Vibe-coded visualizer for day 11 -->
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Graph Visualizer</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: "Trebuchet MS", sans-serif;
+                background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+                color: #e0e0e0;
+                min-height: 100vh;
+                display: flex;
+            }
+
+            .sidebar {
+                width: 320px;
+                padding: 24px;
+                background: rgba(15, 15, 30, 0.95);
+                border-right: 1px solid rgba(100, 200, 255, 0.2);
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .sidebar-title {
+                font-size: 18px;
+                font-weight: 600;
+                background: linear-gradient(135deg, #64c8ff, #00ff88);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                letter-spacing: 0.5px;
+            }
+
+            .form-group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .form-label {
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: uppercase;
+                color: #64c8ff;
+                letter-spacing: 1px;
+            }
+
+            textarea {
+                padding: 12px;
+                background: rgba(30, 30, 50, 0.8);
+                border: 1px solid rgba(100, 200, 255, 0.3);
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-family: "Monaco", "Courier New", monospace;
+                font-size: 12px;
+                line-height: 1.6;
+                resize: vertical;
+                min-height: 180px;
+                transition: all 0.2s ease;
+            }
+
+            textarea:focus {
+                outline: none;
+                border-color: #64c8ff;
+                background: rgba(30, 30, 50, 1);
+                box-shadow: 0 0 12px rgba(100, 200, 255, 0.2);
+            }
+
+            .button {
+                padding: 10px 16px;
+                background: linear-gradient(135deg, #64c8ff, #00ff88);
+                border: none;
+                border-radius: 6px;
+                color: #0f0f1e;
+                font-weight: 600;
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(100, 200, 255, 0.4);
+            }
+
+            .button:active {
+                transform: translateY(0);
+            }
+
+            .info-section {
+                padding: 12px;
+                background: rgba(100, 200, 255, 0.05);
+                border-left: 2px solid #64c8ff;
+                border-radius: 4px;
+                font-size: 12px;
+                line-height: 1.5;
+                color: #b0b0d0;
+            }
+
+            .info-section strong {
+                color: #64c8ff;
+            }
+
+            .canvas-container {
+                flex: 1;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .zoom-controls {
+                position: absolute;
+                top: 16px;
+                right: 16px;
+                display: flex;
+                gap: 8px;
+                z-index: 10;
+            }
+
+            .zoom-btn {
+                width: 40px;
+                height: 40px;
+                border-radius: 6px;
+                background: rgba(100, 200, 255, 0.9);
+                border: 1px solid rgba(100, 200, 255, 1);
+                color: #0f0f1e;
+                font-weight: 700;
+                font-size: 16px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .zoom-btn:hover {
+                background: rgba(100, 200, 255, 1);
+                box-shadow: 0 4px 12px rgba(100, 200, 255, 0.4);
+                transform: translateY(-2px);
+            }
+
+            .zoom-btn:active {
+                transform: translateY(0);
+            }
+
+            svg {
+                width: 100%;
+                height: 100%;
+                background: radial-gradient(
+                    circle at 20% 50%,
+                    rgba(100, 200, 255, 0.03) 0%,
+                    transparent 50%
+                );
+            }
+
+            .node {
+                stroke: #64c8ff;
+                stroke-width: 2px;
+                filter: drop-shadow(0 0 8px rgba(100, 200, 255, 0.3));
+                transition: all 0.2s ease;
+                cursor: pointer;
+            }
+
+            .node:hover {
+                filter: drop-shadow(0 0 16px rgba(100, 200, 255, 0.6));
+                stroke-width: 3px;
+            }
+
+            .node-label {
+                pointer-events: none;
+                font-size: 11px;
+                font-weight: 600;
+                text-anchor: middle;
+                dominant-baseline: central;
+                fill: #e0e0e0;
+                text-shadow: 0 0 4px rgba(15, 15, 30, 0.8);
+            }
+
+            .link {
+                stroke: rgba(100, 200, 255, 0.25);
+                stroke-width: 1.5px;
+                fill: none;
+                marker-end: url(#arrowhead);
+                transition: all 0.2s ease;
+            }
+
+            .link:hover {
+                stroke: rgba(100, 200, 255, 0.6);
+                stroke-width: 2px;
+                filter: drop-shadow(0 0 4px rgba(100, 200, 255, 0.3));
+            }
+
+            defs marker {
+                overflow: visible;
+            }
+
+            .error-message {
+                padding: 12px;
+                background: rgba(255, 100, 100, 0.1);
+                border: 1px solid rgba(255, 100, 100, 0.4);
+                border-radius: 4px;
+                color: #ff9090;
+                font-size: 12px;
+                line-height: 1.5;
+                display: none;
+            }
+
+            .error-message.show {
+                display: block;
+            }
+
+            .stats {
+                padding: 12px;
+                background: rgba(100, 200, 255, 0.03);
+                border: 1px solid rgba(100, 200, 255, 0.2);
+                border-radius: 4px;
+                font-size: 12px;
+                line-height: 1.6;
+                color: #b0b0d0;
+            }
+
+            .stats-item {
+                display: flex;
+                justify-content: space-between;
+                margin: 4px 0;
+            }
+
+            .stats-label {
+                color: #64c8ff;
+                font-weight: 600;
+            }
+
+            @media (max-width: 768px) {
+                body {
+                    flex-direction: column;
+                }
+
+                .sidebar {
+                    width: 100%;
+                    border-right: none;
+                    border-bottom: 1px solid rgba(100, 200, 255, 0.2);
+                    max-height: 40vh;
+                }
+
+                .canvas-container {
+                    min-height: 60vh;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="sidebar">
+            <div class="sidebar-title">Graph Visualizer</div>
+
+            <div class="form-group">
+                <label class="form-label">Paste your graph edges</label>
+                <textarea
+                    id="graphInput"
+                    placeholder="Example:
+svr: aaa bbb
+aaa: fft
+fft: ccc
+..."
+                ></textarea>
+            </div>
+
+            <button class="button" onclick="parseAndVisualize()">
+                Visualize Graph
+            </button>
+
+            <div class="error-message" id="errorMessage"></div>
+
+            <div class="stats" id="stats" style="display: none">
+                <div class="stats-item">
+                    <span class="stats-label">Nodes:</span>
+                    <span id="nodeCount">0</span>
+                </div>
+                <div class="stats-item">
+                    <span class="stats-label">Edges:</span>
+                    <span id="edgeCount">0</span>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <strong>Format:</strong><br />
+                Each line: <code>source: target1 target2 ...</code><br /><br />
+                <strong>Example:</strong><br />
+                start: a b<br />
+                a: x<br />
+                b: x
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoomIn" title="Zoom In">+</button>
+                <button class="zoom-btn" id="zoomOut" title="Zoom Out">
+                    −
+                </button>
+                <button class="zoom-btn" id="zoomReset" title="Reset View">
+                    ⊙
+                </button>
+            </div>
+            <svg id="graphSvg"></svg>
+        </div>
+
+        <script>
+            let simulation;
+            let currentZoom = d3.zoomIdentity;
+
+            function parseGraphInput(text) {
+                const edges = [];
+                const nodes = new Set();
+                const lines = text.trim().split("\n");
+
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+
+                    const parts = line.split(":");
+                    if (parts.length !== 2) {
+                        throw new Error(
+                            `Invalid format: "${line}". Expected "source: target1 target2 ..."`,
+                        );
+                    }
+
+                    const source = parts[0].trim();
+                    if (!source) {
+                        throw new Error(`Empty source node in: "${line}"`);
+                    }
+
+                    nodes.add(source);
+
+                    const targets = parts[1]
+                        .trim()
+                        .split(/\s+/)
+                        .filter((t) => t);
+                    if (targets.length === 0) {
+                        throw new Error(`No targets for source "${source}"`);
+                    }
+
+                    for (const target of targets) {
+                        if (!target) continue;
+                        nodes.add(target);
+                        edges.push({ source, target });
+                    }
+                }
+
+                if (edges.length === 0) {
+                    throw new Error("No edges found in input");
+                }
+
+                // Convert node set to array for D3
+                const nodeArray = Array.from(nodes).map((id) => ({ id }));
+
+                return { nodes: nodeArray, edges };
+            }
+
+            function visualizeGraph(nodes, edges) {
+                const svg = d3.select("#graphSvg");
+                const container = svg.node().parentElement;
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+
+                // Clear previous content
+                svg.selectAll("*").remove();
+
+                // Add defs for arrow markers
+                svg.append("defs")
+                    .append("marker")
+                    .attr("id", "arrowhead")
+                    .attr("markerWidth", 10)
+                    .attr("markerHeight", 10)
+                    .attr("refX", 24)
+                    .attr("refY", 3)
+                    .attr("orient", "auto")
+                    .append("polygon")
+                    .attr("points", "0 0, 10 3, 0 6")
+                    .attr("fill", "rgba(100, 200, 255, 0.6)");
+
+                // Create a group for zoomable content
+                const zoomGroup = svg.append("g").attr("class", "zoom-group");
+
+                // Create simulation with larger forces for bigger graphs
+                const nodeCount = nodes.length;
+                const isLargeGraph = nodeCount > 100;
+
+                simulation = d3
+                    .forceSimulation(nodes)
+                    .force(
+                        "link",
+                        d3
+                            .forceLink(edges)
+                            .id((d) => d.id)
+                            .distance(isLargeGraph ? 120 : 80)
+                            .strength(isLargeGraph ? 0.3 : 0.5),
+                    )
+                    .force(
+                        "charge",
+                        d3.forceManyBody().strength(isLargeGraph ? -500 : -300),
+                    )
+                    .force("center", d3.forceCenter(width / 2, height / 2))
+                    .force(
+                        "collision",
+                        d3.forceCollide().radius(isLargeGraph ? 35 : 30),
+                    );
+
+                // Create link elements
+                const link = zoomGroup
+                    .append("g")
+                    .selectAll("line")
+                    .data(edges)
+                    .enter()
+                    .append("line")
+                    .attr("class", "link");
+
+                // Create node groups
+                const nodeGroup = zoomGroup
+                    .append("g")
+                    .selectAll("g")
+                    .data(nodes)
+                    .enter()
+                    .append("g")
+                    .attr("class", "node-group")
+                    .call(
+                        d3
+                            .drag()
+                            .on("start", dragStarted)
+                            .on("drag", dragged)
+                            .on("end", dragEnded),
+                    );
+
+                // Add circles to nodes
+                nodeGroup
+                    .append("circle")
+                    .attr("class", "node")
+                    .attr("r", isLargeGraph ? 12 : 18)
+                    .attr("fill", (d) => {
+                        // Color nodes based on their connectivity
+                        const outgoing = edges.filter(
+                            (e) => e.source.id === d.id,
+                        ).length;
+                        const incoming = edges.filter(
+                            (e) => e.target.id === d.id,
+                        ).length;
+                        const total = outgoing + incoming;
+                        if (total > 5) return "rgba(100, 200, 255, 0.9)";
+                        if (total > 2) return "rgba(100, 200, 255, 0.7)";
+                        if (outgoing > 0) return "rgba(100, 200, 255, 0.5)";
+                        return "rgba(100, 200, 255, 0.3)";
+                    });
+
+                // Add labels to nodes
+                const nodeLabels = nodeGroup
+                    .append("text")
+                    .attr("class", "node-label")
+                    .text((d) => d.id)
+                    .attr("dy", "0.3em")
+                    .style("opacity", isLargeGraph ? 0 : 1); // Start hidden for large graphs
+
+                // Update positions on simulation tick
+                simulation.on("tick", () => {
+                    link.attr("x1", (d) => d.source.x)
+                        .attr("y1", (d) => d.source.y)
+                        .attr("x2", (d) => d.target.x)
+                        .attr("y2", (d) => d.target.y);
+
+                    nodeGroup.attr(
+                        "transform",
+                        (d) => `translate(${d.x},${d.y})`,
+                    );
+                });
+
+                // Setup zoom behavior
+                const zoom = d3.zoom().on("zoom", (event) => {
+                    currentZoom = event.transform;
+                    zoomGroup.attr("transform", event.transform);
+
+                    // Show/hide labels based on zoom level
+                    // Labels are readable when scale is > 0.8 for large graphs, > 0.5 for smaller ones
+                    const minZoomForLabels = isLargeGraph ? 0.8 : 0.5;
+                    nodeLabels.style(
+                        "opacity",
+                        event.transform.k >= minZoomForLabels ? 1 : 0,
+                    );
+                });
+
+                svg.call(zoom);
+
+                // Setup zoom button handlers
+                document.getElementById("zoomIn").onclick = () => {
+                    svg.transition().duration(300).call(zoom.scaleBy, 1.5);
+                };
+
+                document.getElementById("zoomOut").onclick = () => {
+                    svg.transition().duration(300).call(zoom.scaleBy, 0.67);
+                };
+
+                document.getElementById("zoomReset").onclick = () => {
+                    svg.transition()
+                        .duration(300)
+                        .call(zoom.transform, d3.zoomIdentity);
+                    currentZoom = d3.zoomIdentity;
+                };
+
+                // Drag functions
+                function dragStarted(event, d) {
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    d.fx = d.x;
+                    d.fy = d.y;
+                }
+
+                function dragged(event, d) {
+                    d.fx = event.x;
+                    d.fy = event.y;
+                }
+
+                function dragEnded(event, d) {
+                    if (!event.active) simulation.alphaTarget(0);
+                    d.fx = null;
+                    d.fy = null;
+                }
+            }
+
+            function parseAndVisualize() {
+                const errorEl = document.getElementById("errorMessage");
+                const input = document.getElementById("graphInput").value;
+                const statsEl = document.getElementById("stats");
+
+                errorEl.classList.remove("show");
+
+                try {
+                    if (!input.trim()) {
+                        throw new Error("Please paste a graph definition");
+                    }
+
+                    const { nodes, edges } = parseGraphInput(input);
+
+                    // Update stats
+                    document.getElementById("nodeCount").textContent =
+                        nodes.length;
+                    document.getElementById("edgeCount").textContent =
+                        edges.length;
+                    statsEl.style.display = "block";
+
+                    visualizeGraph(nodes, edges);
+                } catch (error) {
+                    errorEl.textContent = `Error: ${error.message}`;
+                    errorEl.classList.add("show");
+                    statsEl.style.display = "none";
+                }
+            }
+
+            // Load example on page load
+            window.addEventListener("load", () => {
+                document.getElementById("graphInput").value = `svr: aaa bbb
+aaa: fft
+fft: ccc
+bbb: tty
+tty: ccc
+ccc: ddd eee
+ddd: hub
+hub: fff
+eee: dac
+dac: fff
+fff: ggg hhh
+ggg: out
+hhh: out`;
+                parseAndVisualize();
+            });
+
+            // Handle window resize
+            window.addEventListener("resize", () => {
+                if (simulation) {
+                    const svg = d3.select("#graphSvg");
+                    const width = svg.node().parentElement.clientWidth;
+                    const height = svg.node().parentElement.clientHeight;
+                    simulation
+                        .force("center", d3.forceCenter(width / 2, height / 2))
+                        .alpha(0.3)
+                        .restart();
+                }
+            });
+        </script>
+    </body>
+</html>
